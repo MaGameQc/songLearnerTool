@@ -8,8 +8,8 @@
 </head>
 <body>
 
-    <section class="timeLine">
-        <div class="innerTimeLine"></div>
+    <section class="timeBar">
+        <div class="innerTimeBar"></div>
     </section>
     <style>
         *{
@@ -17,19 +17,19 @@
             margin: 0;
             box-sizing: border-box;
         }
-        .timeLine{
+        .timeBar{
             width: 100%;
             height: 2rem;
             background-color: grey;
         }
 
-        .innerTimeLine{
+        .innerTimeBar{
             width: 50%;
             height: 2rem;
             background-color: cyan;
         }
     </style>
-    
+
     <section style="display: flex; flex-direction: column;">
         <button class="play" style="width: 300px; height: 200px;">play</button>
         <button class="record" style="width: 300px; height: 200px;">rec</button>
@@ -40,96 +40,171 @@
 
 class Song {
     constructor(){
-        this.src = "jevoitmonpenis.m4a";
-        this.audio = new Audio();
-        this.audio.src = this.src;
-        this.audioLength = this.getDuration();
-        this.audioCurrentTime = this.audio.currentTime;
-        this.audioPercent = 0;
+        // this.src = "jevoitmonpenis.m4a";
+        // this.audio = new Audio();
+        // this.audio.src = this.src;
+        // this.audioLength = this.getDuration();
+        // this.audioCurrentTime = this.audio.currentTime;
+        // this.audioPercent = 0;
+
+        this.audio = {
+            source: "jevoitmonpenis.m4a",
+            obj: new Audio(),
+            length: "",
+            currentTime: "",
+            percent : 0,
+            constructor: ()=>{
+                this.audio.length = this.audio.getDuration();
+                this.audio.setAudioSrc();
+                this.audio.currentTime = this.audio.obj.currentTime;
+            },
+            setAudioSrc: ()=>{
+                this.audio.obj.src = this.audio.source;
+            },
+            getDuration: ()=>{
+                let audioLength = this.audio.obj.duration;
+                console.log(isNaN(audioLength));
+                if(isNaN(audioLength)){
+                    setTimeout(()=>{
+                        this.audio.getDuration();
+                    },1);
+                }else{
+                    this.audio.length = audioLength;
+                    console.log("duration" + this.audio.length);
+
+                }
+            },
+            addAudioListener: ()=>{
+                this.audio.obj.addEventListener("timeupdate", ()=>{
+                this.audio.currentTime = this.audio.obj.currentTime;
+                console.log();
+
+                    let percentageOfSongPlayed = this.audio.currentTime / this.audio.length * 100;
+                    this.audio.percent = percentageOfSongPlayed;
+                    this.timeBar.updatetimeBar();
+
+                    if(this.audio.currentTime >= this.audio.length){
+                        this.audio.obj.currentTime = 0;
+                        this.audio.obj.play();
+                    }
+
+                // console.log(this.audioCurrentTime);
+                // console.log(this.audioLength);
+            });
+            }
+        };
+        this.audio.constructor();
+
 
         this.playBtn = {
+            //el == the element
             el : document.querySelector(".play"),
-            text : "play",
+            text: "play",
+            state : false,
+            addPlayBtnListener : ()=>{
+                this.playBtn.el.addEventListener("click", ()=>{
+                    if(this.playBtn.state == false){
+                        this.audio.obj.play();
+                        this.playBtn.text = "pause";
+                        this.playBtn.el.textContent = this.playBtn.text;
+                    }else{
+                        this.audio.obj.pause();
+                        this.playBtn.text = "play";
+                        this.playBtn.el.textContent = this.playBtn.text;
+                    }
+                    this.playBtn.state = !this.playBtn.state
+                });
+            },
         }
 
-        this.timeLine = {
-            container : document.querySelector(".timeLine"),
-            innerBar : document.querySelector(".innerTimeLine"),
-            updateTimeLine : ()=>{
-                this.timeLine.innerBar.style.width = this.audioPercent + "%";
-            }
+        this.timeBar = {
+            container : document.querySelector(".timeBar"),
+            innerBar : document.querySelector(".innerTimeBar"),
+            updatetimeBar : ()=>{
+                this.timeBar.innerBar.style.width = this.audio.percent + "%";
+            },
+            addBarClickListener: ()=>{
+                this.timeBar.container.addEventListener("click", (e)=>{
+                    let timeBarWidth = this.timeBar.container.getBoundingClientRect().width;
+                    let clientXPosition = e.clientX;
+
+                    let percentOftimeBar = clientXPosition / timeBarWidth * 100;
+                    //x pourcent
+                    this.audio.obj.currentTime = percentOftimeBar * this.audio.length / 100;
+                });
+            },
         }
 
 
 
-        this.addPlayBtnListener();
-        this.addAudioListener();
-        this.addBarClickListener();
-        
-    }
-
-    addBarClickListener(){
-        this.timeLine.container.addEventListener("click", (e)=>{
-            let timeLineWidth = this.timeLine.container.getBoundingClientRect().width;
-            let clientXPosition = e.clientX;
-
-            let percentOfTimeLine = clientXPosition / timeLineWidth * 100;
-            //x pourcent
-            this.audio.currentTime = percentOfTimeLine * this.audioLength / 100;
-
-            
-            console.log(timeLineWidth + " width" + " " + clientXPosition + " clientX");
-        });
+        this.playBtn.addPlayBtnListener();
+        this.audio.addAudioListener();
+        this.timeBar.addBarClickListener();
 
     }
 
-    addAudioListener(){
-        
-        this.audio.addEventListener("timeupdate", ()=>{
-            this.audioCurrentTime = this.audio.currentTime;
+    // addBarClickListener(){
+    //     this.timeBar.container.addEventListener("click", (e)=>{
+    //         let timeBarWidth = this.timeBar.container.getBoundingClientRect().width;
+    //         let clientXPosition = e.clientX;
 
-                let percentageOfSongPlayed = this.audioCurrentTime / this.audioLength * 100;
-                this.audioPercent = percentageOfSongPlayed;
-                this.timeLine.updateTimeLine();
+    //         let percentOftimeBar = clientXPosition / timeBarWidth * 100;
+    //         //x pourcent
+    //         this.audio.currentTime = percentOftimeBar * this.audioLength / 100;
 
-                if(this.audio.currentTime >= this.audioLength){
-                    this.audio.currentTime = 0;
-                    this.audio.play();
-                }
-            
-            // console.log(this.audioCurrentTime);
-            // console.log(this.audioLength);
-        });
-    }
 
-    getDuration(){
-        let audioLength = this.audio.duration;
-        console.log(isNaN(audioLength));
-        if(isNaN(audioLength)){
-            setTimeout(()=>{
-                this.getDuration();
-            },1);
-        }else{
-            this.audioLength = audioLength;
-            console.log("duration" + this.audioLength);
-            
-        }
-    }
+    //         console.log(timeBarWidth + " width" + " " + clientXPosition + " clientX");
+    //     });
 
-    addPlayBtnListener(){
+    // }
+
+    // addAudioListener(){
+
+    //     this.audio.addEventListener("timeupdate", ()=>{
+    //         this.audioCurrentTime = this.audio.currentTime;
+
+    //             let percentageOfSongPlayed = this.audioCurrentTime / this.audioLength * 100;
+    //             this.audioPercent = percentageOfSongPlayed;
+    //             this.timeBar.updatetimeBar();
+
+    //             if(this.audio.currentTime >= this.audioLength){
+    //                 this.audio.currentTime = 0;
+    //                 this.audio.play();
+    //             }
+
+    //         // console.log(this.audioCurrentTime);
+    //         // console.log(this.audioLength);
+    //     });
+    // }
+
+    // getDuration(){
+    //     let audioLength = this.audio.duration;
+    //     console.log(isNaN(audioLength));
+    //     if(isNaN(audioLength)){
+    //         setTimeout(()=>{
+    //             this.getDuration();
+    //         },1);
+    //     }else{
+    //         this.audioLength = audioLength;
+    //         console.log("duration" + this.audioLength);
+
+    //     }
+    // }
+
+    // addPlayBtnListener(){
         // console.log(this.audioLength);
-        this.playBtn.el.addEventListener("click", ()=>{
-            if(this.playBtn.text == "play"){
-                this.audio.play();
-                this.playBtn.text = "pause";
-                this.playBtn.el.textContent = this.playBtn.text;
-            }else{
-                this.audio.pause();
-                this.playBtn.text = "play";
-                this.playBtn.el.textContent = this.playBtn.text;
-            }
-        });
-    }
+        // this.playBtn.el.addEventListener("click", ()=>{
+        //     if(this.playBtn.text == "play"){
+        //         this.audio.play();
+        //         this.playBtn.text = "pause";
+        //         this.playBtn.el.textContent = this.playBtn.text;
+        //     }else{
+        //         this.audio.pause();
+        //         this.playBtn.text = "play";
+        //         this.playBtn.el.textContent = this.playBtn.text;
+        //     }
+        // });
+    // }
 
 
 }
