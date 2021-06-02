@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <section class="timeLine">
+        <div class="innerTimeLine"></div>
+    </section>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        .timeLine{
+            width: 100%;
+            height: 2rem;
+            background-color: grey;
+        }
+
+        .innerTimeLine{
+            width: 50%;
+            height: 2rem;
+            background-color: cyan;
+        }
+    </style>
+    
+    <section style="display: flex; flex-direction: column;">
+        <button class="play" style="width: 300px; height: 200px;">play</button>
+        <button class="record" style="width: 300px; height: 200px;">rec</button>
+        <button class="reset" style="width: 300px; height: 200px;">reset</button>
+    </section>
+
+<script>
+
+class Song {
+    constructor(){
+        this.src = "jevoitmonpenis.m4a";
+        this.audio = new Audio();
+        this.audio.src = this.src;
+        this.audioLength = this.getDuration();
+        this.audioCurrentTime = this.audio.currentTime;
+        this.audioPercent = 0;
+
+        this.playBtn = {
+            el : document.querySelector(".play"),
+            text : "play",
+        }
+
+        this.timeLine = {
+            container : document.querySelector(".timeLine"),
+            innerBar : document.querySelector(".innerTimeLine"),
+            updateTimeLine : ()=>{
+                this.timeLine.innerBar.style.width = this.audioPercent + "%";
+            }
+        }
+
+
+
+        this.addPlayBtnListener();
+        this.addAudioListener();
+        this.addBarClickListener();
+        
+    }
+
+    addBarClickListener(){
+        this.timeLine.container.addEventListener("click", (e)=>{
+            let timeLineWidth = this.timeLine.container.getBoundingClientRect().width;
+            let clientXPosition = e.clientX;
+
+            let percentOfTimeLine = clientXPosition / timeLineWidth * 100;
+            //x pourcent
+            this.audio.currentTime = percentOfTimeLine * this.audioLength / 100;
+
+            
+            console.log(timeLineWidth + " width" + " " + clientXPosition + " clientX");
+        });
+
+    }
+
+    addAudioListener(){
+        
+        this.audio.addEventListener("timeupdate", ()=>{
+            this.audioCurrentTime = this.audio.currentTime;
+
+                let percentageOfSongPlayed = this.audioCurrentTime / this.audioLength * 100;
+                this.audioPercent = percentageOfSongPlayed;
+                this.timeLine.updateTimeLine();
+
+                if(this.audio.currentTime >= this.audioLength){
+                    this.audio.currentTime = 0;
+                    this.audio.play();
+                }
+            
+            // console.log(this.audioCurrentTime);
+            // console.log(this.audioLength);
+        });
+    }
+
+    getDuration(){
+        let audioLength = this.audio.duration;
+        console.log(isNaN(audioLength));
+        if(isNaN(audioLength)){
+            setTimeout(()=>{
+                this.getDuration();
+            },1);
+        }else{
+            this.audioLength = audioLength;
+            console.log("duration" + this.audioLength);
+            
+        }
+    }
+
+    addPlayBtnListener(){
+        // console.log(this.audioLength);
+        this.playBtn.el.addEventListener("click", ()=>{
+            if(this.playBtn.text == "play"){
+                this.audio.play();
+                this.playBtn.text = "pause";
+                this.playBtn.el.textContent = this.playBtn.text;
+            }else{
+                this.audio.pause();
+                this.playBtn.text = "play";
+                this.playBtn.el.textContent = this.playBtn.text;
+            }
+        });
+    }
+
+
+}
+
+let song = new Song();
+
+</script>
+
+</body>
+</html>
