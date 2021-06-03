@@ -32,20 +32,27 @@
 
     <section style="display: flex; flex-direction: column;">
         <button class="play" style="width: 300px; height: 200px;">play</button>
-        <button class="record" style="width: 300px; height: 200px;">rec</button>
+        <button class="record" style="width: 300px; height: 200px;">record</button>
         <button class="reset" style="width: 300px; height: 200px;">reset</button>
+        <input type="file" class="file" name="" id="">
     </section>
 
 <script>
 
 class Song {
     constructor(){
-        // this.src = "jevoitmonpenis.m4a";
-        // this.audio = new Audio();
-        // this.audio.src = this.src;
-        // this.audioLength = this.getDuration();
-        // this.audioCurrentTime = this.audio.currentTime;
-        // this.audioPercent = 0;
+
+        this.app = {
+            initialiseApp : ()=>{
+                this.playBtn.addPlayBtnListener();
+                this.recordBtn.constructor();
+                this.audio.audioPlayListener();
+                this.timeBar.constructor();
+                this.file.constructor();
+                this.audio.constructor();
+            }
+        }
+
 
         this.audio = {
             source: "jevoitmonpenis.m4a",
@@ -53,6 +60,7 @@ class Song {
             length: "",
             currentTime: "",
             percent : 0,
+            recorderState : 0,
             constructor: ()=>{
                 this.audio.length = this.audio.getDuration();
                 this.audio.setAudioSrc();
@@ -63,22 +71,18 @@ class Song {
             },
             getDuration: ()=>{
                 let audioLength = this.audio.obj.duration;
-                console.log(isNaN(audioLength));
                 if(isNaN(audioLength)){
                     setTimeout(()=>{
                         this.audio.getDuration();
                     },1);
                 }else{
                     this.audio.length = audioLength;
-                    console.log("duration" + this.audio.length);
 
                 }
             },
-            addAudioListener: ()=>{
+            audioPlayListener: ()=>{
                 this.audio.obj.addEventListener("timeupdate", ()=>{
                 this.audio.currentTime = this.audio.obj.currentTime;
-                console.log();
-
                     let percentageOfSongPlayed = this.audio.currentTime / this.audio.length * 100;
                     this.audio.percent = percentageOfSongPlayed;
                     this.timeBar.updatetimeBar();
@@ -87,13 +91,50 @@ class Song {
                         this.audio.obj.currentTime = 0;
                         this.audio.obj.play();
                     }
+                });
+            },
+            looper: (startingTime, endingTime)=>{
+                let audio = this.audio;
+                function loop(){
+                    console.log("looping");
+                    let currentTime = audio.obj.currentTime;
+                        if(currentTime >= endingTime){
+                            console.log("hey" + startingTime);
+                            audio.obj.currentTime = startingTime;
+                        }
+                }
 
-                // console.log(this.audioCurrentTime);
-                // console.log(this.audioLength);
-            });
+                if(this.audio.recorderState == 2){
+                    this.audio.obj.addEventListener("timeupdate", loop);
+                    console.log(this.audio.recorderState + "recstate");
+
+                    this.recordBtn.el.addEventListener("click", ()=>{
+                        this.audio.obj.removeEventListener("timeupdate", loop);
+                        console.log("end looping");
+                    });
+
+                }else{
+                    return
+                }
+                
             }
         };
-        this.audio.constructor();
+
+        this.file = {
+            el : document.querySelector(".file"),
+            constructor: ()=>{
+                this.file.addChangeListener(this.file.el);
+            },
+            addChangeListener : (element)=>{
+                element.addEventListener("change", ()=>{
+                    console.log(URL.createObjectURL(this.file.el.files[0]));
+                    let uploadedFile = URL.createObjectURL(this.file.el.files[0]);
+                    // this.audio.obj.src = uploadedFile;
+                    this.audio.source = uploadedFile;
+                    this.audio.constructor();
+                });
+            },
+        };
 
 
         this.playBtn = {
@@ -117,9 +158,69 @@ class Song {
             },
         }
 
+        this.recordBtn = {
+            //el == the element
+            el : document.querySelector(".record"),
+            text: "record",
+            state : 0,
+            startingTime : 0,
+            endingTime : 0,
+            constructor : ()=>{
+                this.recordBtn.addRecordBtnListener();
+            },
+            addRecordBtnListener : ()=>{
+                this.recordBtn.el.addEventListener("click", ()=>{
+                    let rec = this.recordBtn; 
+                    if(rec.state == 0){                        
+                        rec.setLoopStart(this.audio.obj.currentTime);
+                        rec.state = 1;
+                        this.audio.recorderState = 1;
+                        return
+                    }
+                    if(rec.state == 1){
+                        rec.setLoopEnd(this.audio.obj.currentTime);
+                        rec.state = 2;
+                        this.audio.recorderState = 2;
+                        rec.startLoop();
+                        // rec.state = 3;
+                        // this.audio.recorderState = 3;
+                        return
+                    } else{
+                        rec.state = 0;
+                        this.audio.recorderState = 0;
+                        rec.startLoop();
+                        console.log("btnlistener reset")
+                        return
+                    }
+                    
+                    
+                });
+            },
+            setLoopStart : (currentTime)=>{
+                this.recordBtn.startingTime = currentTime;
+            },
+            setLoopEnd : (currentTime)=>{
+                this.recordBtn.endingTime = currentTime;
+            },
+            startLoop : ()=>{
+                console.log("starting " + this.recordBtn.startingTime + " ending " + this.recordBtn.endingTime);
+                let audioObj = this.audio.obj;
+                let audio = this.audio;
+                // audioObj.currentTime = this.recordBtn.startingTime;
+                audio.looper(this.recordBtn.startingTime, this.recordBtn.endingTime);
+            },
+
+        };
+
+    
+
         this.timeBar = {
             container : document.querySelector(".timeBar"),
             innerBar : document.querySelector(".innerTimeBar"),
+            constructor: ()=>{
+                this.timeBar.addBarClickListener();
+                this.timeBar.addBarSlideListener();
+            },
             updatetimeBar : ()=>{
                 this.timeBar.innerBar.style.width = this.audio.percent + "%";
             },
@@ -133,80 +234,31 @@ class Song {
                     this.audio.obj.currentTime = percentOftimeBar * this.audio.length / 100;
                 });
             },
+            addBarSlideListener: ()=>{
+                // this.timeBar.container.addEventListener("mousedown", ()=>{
+                //     this.timeBar.container.addEventListener("mousemove", (e)=>{
+                //         let timeBarWidth = this.timeBar.container.getBoundingClientRect().width;
+                //         let clientXPosition = e.clientX;
+
+                //         let percentOftimeBar = clientXPosition / timeBarWidth * 100;
+                //         //x pourcent
+                //         this.audio.obj.currentTime = percentOftimeBar * this.audio.length / 100;
+                //         this.timeBar.updatetimeBar();
+                //     });
+                // });
+                //TO DO
+            },
         }
 
 
+        this.app.initialiseApp();
 
-        this.playBtn.addPlayBtnListener();
-        this.audio.addAudioListener();
-        this.timeBar.addBarClickListener();
+
+
 
     }
 
-    // addBarClickListener(){
-    //     this.timeBar.container.addEventListener("click", (e)=>{
-    //         let timeBarWidth = this.timeBar.container.getBoundingClientRect().width;
-    //         let clientXPosition = e.clientX;
-
-    //         let percentOftimeBar = clientXPosition / timeBarWidth * 100;
-    //         //x pourcent
-    //         this.audio.currentTime = percentOftimeBar * this.audioLength / 100;
-
-
-    //         console.log(timeBarWidth + " width" + " " + clientXPosition + " clientX");
-    //     });
-
-    // }
-
-    // addAudioListener(){
-
-    //     this.audio.addEventListener("timeupdate", ()=>{
-    //         this.audioCurrentTime = this.audio.currentTime;
-
-    //             let percentageOfSongPlayed = this.audioCurrentTime / this.audioLength * 100;
-    //             this.audioPercent = percentageOfSongPlayed;
-    //             this.timeBar.updatetimeBar();
-
-    //             if(this.audio.currentTime >= this.audioLength){
-    //                 this.audio.currentTime = 0;
-    //                 this.audio.play();
-    //             }
-
-    //         // console.log(this.audioCurrentTime);
-    //         // console.log(this.audioLength);
-    //     });
-    // }
-
-    // getDuration(){
-    //     let audioLength = this.audio.duration;
-    //     console.log(isNaN(audioLength));
-    //     if(isNaN(audioLength)){
-    //         setTimeout(()=>{
-    //             this.getDuration();
-    //         },1);
-    //     }else{
-    //         this.audioLength = audioLength;
-    //         console.log("duration" + this.audioLength);
-
-    //     }
-    // }
-
-    // addPlayBtnListener(){
-        // console.log(this.audioLength);
-        // this.playBtn.el.addEventListener("click", ()=>{
-        //     if(this.playBtn.text == "play"){
-        //         this.audio.play();
-        //         this.playBtn.text = "pause";
-        //         this.playBtn.el.textContent = this.playBtn.text;
-        //     }else{
-        //         this.audio.pause();
-        //         this.playBtn.text = "play";
-        //         this.playBtn.el.textContent = this.playBtn.text;
-        //     }
-        // });
-    // }
-
-
+    
 }
 
 let song = new Song();
